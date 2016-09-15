@@ -136,7 +136,7 @@ def get_plot(performance,lvalArray,graph_type):
 
     for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
                  ax.get_xticklabels() + ax.get_yticklabels()):
-        item.set_fontsize(24)
+        item.set_fontsize(30)
 
 
     plot_dir = '.'
@@ -149,8 +149,8 @@ def get_plot(performance,lvalArray,graph_type):
 def main():
     print "Main start: {0} ".format(time.ctime())
 
-    no_MC               =  1 # 30 #
-    group_size          =  4
+    no_MC               =  30 # 1 #
+    group_size          =   4
     number_of_riders    =  16
     m = number_of_riders/group_size
     L = 100
