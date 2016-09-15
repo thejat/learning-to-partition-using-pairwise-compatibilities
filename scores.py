@@ -1,30 +1,12 @@
-import sys, collections, math, itertools, numpy, matplotlib, copy, pprint, json, random, time, pickle
-from group_formation_experiments import get_rider_graph, generate_weights, nCr, get_relabeled_graph, get_random_subgraph,get_graph_weights
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import networkx as nx
-import seaborn as sns
+import time
+print "Import start: {0} ".format(time.ctime())
+import math, numpy, matplotlib, copy, pprint, random
 matplotlib.use('Agg')
+matplotlib.rcParams.update({'figure.autolayout': True})
+import matplotlib.pyplot as plt
+import networkx as nx
 random.seed(111)
-
-import nips_experiment
-
-
-no_MC               =  10
-group_size          =  4
-number_of_riders    =  16
-m = number_of_riders/group_size
-L = 100
-
-MIN_SCORE = 1
-MAX_SCORE = 10
-p = math.log(number_of_riders)*1.0/number_of_riders
-H = nx.gnp_random_graph(number_of_riders,p)
-for i in H.nodes():
-    H.node[i]['score'] = random.uniform(MIN_SCORE,MAX_SCORE)
-
-for i in H.nodes():
-    print H.node[i]['score']
+print "Import end: {0} ".format(time.ctime())
 
 def get_feedback(H,k_partition,group_size):
     MIN_NOISE = -1.0/group_size
@@ -33,7 +15,7 @@ def get_feedback(H,k_partition,group_size):
     for group in k_partition:
         temp = numpy.asarray([H.node[x]['score'] for x in H.nodes() if x in group])
         # print 'temp',temp
-        feedback[group[-1]] = np.sum(np.outer(temp,temp)) + 1000.0*random.uniform(MIN_NOISE,MAX_NOISE)
+        feedback[group[-1]] = numpy.sum(numpy.outer(temp,temp)) + 1000.0*random.uniform(MIN_NOISE,MAX_NOISE)
         # print "the feedback is",feedback[group[-1]]
     return feedback # is a dictionary with keys being the groups
 
@@ -58,7 +40,7 @@ def do_stuff(H,L,group_size,number_of_riders):
         for i in range(L):
             feedbacks[e].append(get_feedback(H,partitions[e],group_size))
 
-    pprint.pprint(partitions)
+    # pprint.pprint(partitions)
 
     score_diff = {}
     for e in H.edges():
@@ -71,14 +53,14 @@ def do_stuff(H,L,group_size,number_of_riders):
         # print "batch",batch
         score_diff[e] = math.sqrt(batch[e[0]]) - math.sqrt(batch[e[1]])
 
-    pprint.pprint(score_diff)
+    # pprint.pprint(score_diff)
 
     from operator import itemgetter
     node_degree_list = sorted(H.degree_iter(),key=itemgetter(1),reverse=True)
-    print node_degree_list[0][0]
+    # print node_degree_list[0][0]
 
     paths = nx.shortest_path(H,source=node_degree_list[0][0])
-    pprint.pprint(paths)
+    # pprint.pprint(paths)
 
     top_node = node_degree_list[0][0]
     final_scores = {}
@@ -109,43 +91,90 @@ def do_stuff(H,L,group_size,number_of_riders):
         estimated_scores.append(abs(estimated_score))
 
     error_magnitude = numpy.linalg.norm(numpy.asarray(true_scores) - numpy.asarray(estimated_scores))/numpy.linalg.norm(true_scores)
-    print error_magnitude
+    # print error_magnitude
 
     return error_magnitude
 
-performance = []
-for round_number in range(no_MC):
-    temp = []
-    for lval in [10,100,200,500,1000]:
-        temp.append(do_stuff(H,lval,group_size,number_of_riders))
-    performance.append(temp)
 
-print performance
+def get_graph(number_of_riders,MIN_SCORE,MAX_SCORE):
+
+    print "Generating Gnp graph start: {0} ".format(time.ctime())
+    p = math.log(number_of_riders)*1.0/number_of_riders
+    H = nx.gnp_random_graph(number_of_riders,p)
+    for i in H.nodes():
+        H.node[i]['score'] = random.uniform(MIN_SCORE,MAX_SCORE)
+
+    print "Generating Gnp graph end: {0} ".format(time.ctime())
+
+    # for i in H.nodes():
+    #     print H.node[i]['score']
+    return H
 
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
+def get_plot(performance,lvalArray,graph_type):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
 
-temp = numpy.asarray(performance)
-#print temp
-temp_avg = numpy.mean(temp, axis=0)
-#print temp_avg
-temp_std = numpy.std(temp, axis=0)
+    temp = numpy.asarray(performance)
+    #print temp
+    temp_avg = numpy.mean(temp, axis=0)
+    #print temp_avg
+    temp_std = numpy.std(temp, axis=0)
 
-xs = [10,100,200,500,1000]
-ys = temp_avg
+    xs = lvalArray
+    ys = temp_avg
 
-ax.fill_between(xs, ys-temp_std, ys+temp_std, alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
-ax.plot(xs, ys)
+    ax.fill_between(xs, ys-temp_std, ys+temp_std, alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
+    ax.plot(xs, ys)
 
-plt.show()
-plt.xlabel('Sample size #')
-plt.ylabel('Normalized rror')
-plt.title('Error between estimates and true scores')
-plt.tight_layout()
-plt.ylim((0,1.2*max(ys)))
+    plt.show()
+    plt.xlabel('t')
+    plt.ylabel('Error')
+    # plt.title('Error between estimates and true scores')
+    # plt.gca.tight_layout()
+    plt.ylim((0,1.2*max(ys)))
 
-plot_dir = '.'
-fname = plot_dir + '/scores_fig' + '.png'
-print "plot will be saved at:",fname
-plt.savefig(fname)
+    for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                 ax.get_xticklabels() + ax.get_yticklabels()):
+        item.set_fontsize(24)
+
+
+    plot_dir = '.'
+    fname = plot_dir + '/learning_order_' + graph_type+'_16.png'
+    print "plot will be saved at:",fname
+    plt.savefig(fname)
+
+
+
+def main():
+    print "Main start: {0} ".format(time.ctime())
+
+    no_MC               =  1 # 30 #
+    group_size          =  4
+    number_of_riders    =  16
+    m = number_of_riders/group_size
+    L = 100
+    graph_type = 'random' # 'facebook' #
+
+    MIN_SCORE = 1
+    MAX_SCORE = 10
+
+    H = get_graph(number_of_riders,MIN_SCORE,MAX_SCORE)
+
+    lvalArray = [10,40,80,120,160,200,250,300,350,400,500,750,1000]
+
+    performance = []
+    for round_number in range(no_MC):
+        print 'MC run: {0}. Time : {1}'.format(round_number,time.ctime())
+        temp = []
+        for lval in lvalArray:
+            temp.append(do_stuff(H,lval,group_size,number_of_riders))
+        performance.append(temp)
+
+    # print performance
+
+    get_plot(performance,lvalArray,graph_type)
+
+
+if __name__=="__main__":
+    main()
