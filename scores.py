@@ -149,17 +149,43 @@ def get_plot(performance,lvalArray,graph_type):
 def main():
     print "Main start: {0} ".format(time.ctime())
 
-    no_MC               =  30 # 1 #
+    no_MC               =   30 # 1 #
     group_size          =   4
     number_of_riders    =  16
     m = number_of_riders/group_size
     L = 100
-    graph_type = 'random' # 'facebook' #
+    graph_type = 'facebook' # 'random' #
 
     MIN_SCORE = 1
     MAX_SCORE = 10
 
-    H = get_graph(number_of_riders,MIN_SCORE,MAX_SCORE)
+
+    if graph_type=='facebook':
+        #Load original graph
+        print "Loading facebook graph from pickle..."
+        start_time_fb = time.time()
+        temp_dir = 'D:/usb2/datasets/group_formation_temp'
+        GraphInput = nx.read_gpickle(temp_dir+"/fbgraph.gpickle")
+        print "Facebook graph loaded in sec:",time.time() - start_time_fb
+
+
+        nodes = GraphInput.nodes()
+        subgraph_nodes = random.sample(nodes, number_of_riders)
+        H1 = GraphInput.subgraph(subgraph_nodes)
+
+        label_mapping = {}
+        nodes = H1.nodes()
+        for index in range(len(nodes)):
+            label_mapping[nodes[index]] = int(index)
+        H = nx.relabel_nodes(H1, label_mapping)
+
+        for i in H.nodes():
+            H.node[i]['score'] = random.uniform(MIN_SCORE,MAX_SCORE)
+
+    elif graph_type=='random':
+        H = get_graph(number_of_riders,MIN_SCORE,MAX_SCORE)
+    else:
+        print "ERROR"
 
     lvalArray = [10,40,80,120,160,200,250,300,350,400,500,750,1000]
 
